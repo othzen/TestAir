@@ -82,13 +82,13 @@ public class MainActivity extends Activity implements OLYCameraConnectionListene
                 try {
                     camera.changeLiveViewSize(toLiveViewSize(preferences.getString("live_view_quality", "QVGA")));
                 } catch (OLYCameraKitException e) {
-                    Log.w(TAG, "To change the live view size is failed: " + e.getMessage());
+                    Log.w(TAG, "Change the live view size failed: " + e.getMessage());
                     return;
                 }
                 try {
                     camera.changeRunMode(OLYCamera.RunMode.Recording);
                 } catch (OLYCameraKitException e) {
-                    Log.w(TAG, "To change the run-mode is failed: " + e.getMessage());
+                    Log.w(TAG, "Change the run-mode failed: " + e.getMessage());
                     return;
                 }
 
@@ -114,7 +114,7 @@ public class MainActivity extends Activity implements OLYCameraConnectionListene
                         try {
                             camera.setCameraPropertyValues(values);
                         } catch (OLYCameraKitException e) {
-                            Log.w(TAG, "To change the camera properties is failed: " + e.getMessage());
+                            Log.w(TAG, "Changing the camera properties failed: " + e.getMessage());
                         }
                     }
                 }
@@ -122,11 +122,12 @@ public class MainActivity extends Activity implements OLYCameraConnectionListene
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
-                        onConnectedToCamera();
+                        //onConnectedToCamera();
                     }
                 });
             }
         });
+        return String.valueOf(camera.isConnected());
     }
 
 
@@ -176,5 +177,17 @@ public class MainActivity extends Activity implements OLYCameraConnectionListene
                 onDisconnectedFromCamera();
             }
         });
+    }
+    private OLYCamera.LiveViewSize toLiveViewSize(String quality) {
+        if (quality.equalsIgnoreCase("QVGA")) {
+            return OLYCamera.LiveViewSize.QVGA;
+        } else if (quality.equalsIgnoreCase("VGA")) {
+            return OLYCamera.LiveViewSize.VGA;
+        } else if (quality.equalsIgnoreCase("SVGA")) {
+            return OLYCamera.LiveViewSize.SVGA;
+        } else if (quality.equalsIgnoreCase("XGA")) {
+            return OLYCamera.LiveViewSize.XGA;
+        }
+        return OLYCamera.LiveViewSize.QVGA;
     }
 }
