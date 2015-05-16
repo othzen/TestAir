@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">Test</string>
+
+    <string name="Title">Luffe!</string>
+    <string name="action_settings">Settings</string>
+    <string name="textbox">Status field</string>
+    <string name="statusKnapp">Connect to camera</string>
+</resources>
