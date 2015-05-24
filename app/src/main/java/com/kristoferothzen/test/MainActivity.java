@@ -1,5 +1,7 @@
 package com.kristoferothzen.test;
 
+import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothDevice;
 import android.os.Environment;
 import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
@@ -14,6 +16,8 @@ import android.app.Activity;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
+
+import jp.co.olympus.camerakit.OACentralConfiguration;
 import jp.co.olympus.camerakit.OLYCamera;
 import jp.co.olympus.camerakit.OLYCameraConnectionListener;
 import jp.co.olympus.camerakit.OLYCameraKitException;
@@ -44,6 +48,7 @@ public class MainActivity extends Activity implements OLYCameraConnectionListene
 
     private final String TAG = this.toString();
     private Executor connectionExecutor = Executors.newFixedThreadPool(1);
+    private BluetoothAdapter btAdapter;
     private BroadcastReceiver connectionReceiver;
     private OLYCamera camera;
     {
@@ -51,84 +56,77 @@ public class MainActivity extends Activity implements OLYCameraConnectionListene
         camera.setConnectionListener(this);
     }
 
-
+    private BluetoothAdapter.LeScanCallback mLeScanCallback = new BluetoothAdapter.LeScanCallback(){
+        OACentralConfiguration OACentral = OACentralConfiguration.load();
+        String BLEName = OACentral.getBleName();
+        String BLECode = OACentral.getBleCode();
+        BluetoothDevice bluetoothDevice;
+        @Override
+        public void onLeScan(final BluetoothDevice device,int rssi,byte[] scanRecord){
+            if(BLEName.equals(device.getName())){
+                btAdapter.stopLeScan(this);
+                try{
+                    camera.setBluetoothDevice(device);
+                    makePublic(device);
+                    camera.setBluetoothPassword(BLECode);
+                    camera.wakeup();
+                    camera.connect(OLYCamera.ConnectionType.BluetoothLE);
+                }
+                catch(OLYCameraKitException e){
+                    Log.w(TAG,"Connecting to the camera failed: "+ e.getMessage());
+                }
+            }
+        }
+    };
 
     public void statusKnappKlickad(View V) {
         //Visa statusen vid knapptryckningen
         TextView statusTextBox;
+        String connectionStatus = "Penisen";
         statusTextBox = (TextView) findViewById(R.id.statusText);
-        while (!camera.isConnected()){
-            WifiManager wifiManager = (WifiManager)getSystemService(Context.WIFI_SERVICE);
-            WifiInfo info = wifiManager.getConnectionInfo();
-            if (wifiManager.isWifiEnabled() && info != null && info.getNetworkId() != -1) {
-                startConnectingCamera();
-            }
+        WifiManager wifiManager = (WifiManager)getSystemService(Context.WIFI_SERVICE);
+        WifiInfo info = wifiManager.getConnectionInfo();
+        if (wifiManager.isWifiEnabled() && info != null && info.getNetworkId() != -1) {
+            connectionStatus = startConnectingCamera();
+        }
+        //connectionStatus = String.valueOf(camera.isConnected());
+        statusTextBox.setText(connectionStatus);
+    }
+
+
+    public String startConnectingCamera(){
+        String connectionStatus = "Not connected yet";
+        //camera.setContext(Context context);
+        //BluetoothDevice Luffe =
+        camera.setContext(getApplicationContext());
+        camera.setConnectionListener(this);
+        OACentralConfiguration OACentral = OACentralConfiguration.load();
+        String BLEName = OACentral.getBleName();
+        String BLECode = OACentral.getBleCode();
+        try {
+            camera.setBluetoothDevice(device);
+            camera.setBluetoothPassword(BLECode);
+            camera.wakeup();
+            camera.connect(OLYCamera.ConnectionType.BluetoothLE);
+            camera.wakeup();
+            camera.connect(OLYCamera.ConnectionType.WiFi);
+            connectionStatus = "Connection succeeded!";
+        } catch (OLYCameraKitException e) {
+            Log.w(TAG, "Connecting to the camera failed: " + e.getMessage());
+            connectionStatus = String.valueOf(e.getMessage());
+            return connectionStatus;
         }
 
+
+        return connectionStatus;
     }
 
-    private String startConnectingCamera(){
-        connectionExecutor.execute(new Runnable() {
-            @Override
-            public void run() {
-                SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(MainActivity.this);
 
-                try {
-                    camera.connect();
-                } catch (OLYCameraKitException e) {
-                    Log.w(TAG, "Connect to the camera failed: " + e.getMessage());
-                    return;
-                }
-                try {
-                    camera.changeLiveViewSize(toLiveViewSize(preferences.getString("live_view_quality", "QVGA")));
-                } catch (OLYCameraKitException e) {
-                    Log.w(TAG, "Change the live view size failed: " + e.getMessage());
-                    return;
-                }
-                try {
-                    camera.changeRunMode(OLYCamera.RunMode.Recording);
-                } catch (OLYCameraKitException e) {
-                    Log.w(TAG, "Change the run-mode failed: " + e.getMessage());
-                    return;
-                }
 
-                // Restores my settings.
-                if (camera.isConnected()) {
-                    Map<String, String> values = new HashMap<String, String>();
-                    for (String name : Arrays.asList(
-                            "TAKEMODE",
-                            "TAKE_DRIVE",
-                            "APERTURE",
-                            "SHUTTER",
-                            "EXPREV",
-                            "WB",
-                            "ISO",
-                            "RECVIEW"
-                    )) {
-                        String value = preferences.getString(name, null);
-                        if (value != null) {
-                            values.put(name, value);
-                        }
-                    }
-                    if (values.size() > 0) {
-                        try {
-                            camera.setCameraPropertyValues(values);
-                        } catch (OLYCameraKitException e) {
-                            Log.w(TAG, "Changing the camera properties failed: " + e.getMessage());
-                        }
-                    }
-                }
 
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        //onConnectedToCamera();
-                    }
-                });
-            }
-        });
-        return String.valueOf(camera.isConnected());
-    }
+
+
+
 
 
     @Override
