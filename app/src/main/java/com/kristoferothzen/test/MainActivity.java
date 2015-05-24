@@ -45,7 +45,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
 public class MainActivity extends Activity implements OLYCameraConnectionListener{
-
+    public BluetoothDevice cameraDevice;
     private final String TAG = this.toString();
     private Executor connectionExecutor = Executors.newFixedThreadPool(1);
     private BluetoothAdapter btAdapter;
@@ -104,7 +104,7 @@ public class MainActivity extends Activity implements OLYCameraConnectionListene
         String BLEName = OACentral.getBleName();
         String BLECode = OACentral.getBleCode();
         try {
-            camera.setBluetoothDevice(device);
+            camera.setBluetoothDevice(cameraDevice);
             camera.setBluetoothPassword(BLECode);
             camera.wakeup();
             camera.connect(OLYCamera.ConnectionType.BluetoothLE);
@@ -122,7 +122,9 @@ public class MainActivity extends Activity implements OLYCameraConnectionListene
     }
 
 
-
+    void makePublic(BluetoothDevice bluetoothDevice){
+        cameraDevice=bluetoothDevice;
+    }
 
 
 
